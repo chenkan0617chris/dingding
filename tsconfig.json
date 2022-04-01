@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ESNext",
+    "lib": ["ES6", "DOM", "ES7", "ESNext"],
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "declaration": true,
+    "sourceMap": true,
+    "noImplicitAny": false,
+    "rootDir": ".",
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "removeComments": true,
+    "importHelpers": true,
+    "preserveConstEnums": true,
+    "esModuleInterop": true,
+  }
+}
