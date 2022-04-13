@@ -1,20 +1,24 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
     "target": "ESNext",
-    "lib": ["ES6", "DOM", "ES7", "ESNext"],
-    "moduleResolution": "node",
+    "module": "commonjs",
+    "sourceMap": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // "moduleResolution": "node",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "declaration": true,
-    "sourceMap": true,
     "noImplicitAny": false,
-    "rootDir": ".",
-    "outDir": "./dist",
-    "baseUrl": ".",
+    // "baseUrl": ".",
     "removeComments": true,
-    "importHelpers": true,
-    "preserveConstEnums": true,
-    "esModuleInterop": true,
-  }
+    "importHelpers": true
+  },
+  "include": ["./src"],
+  "exclude": ["node_modules", "dist", "build"]
 }
