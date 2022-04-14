@@ -1,20 +1,16 @@
-FROM node:12
+FROM node:16
 
-# Create app directory
-WORKDIR /usr/src/app
+WORKDIR /usr/dingding-server
 
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
-COPY package*.json ./
+COPY package*.json .
+COPY config ./config
+COPY data ./data
+COPY src ./src
+COPY tsconfig.json .
+COPY processes.json .
 
-RUN npm install
-# If you are building your code for production
-# RUN npm ci --only=production
+RUN npm run build-docker
 
-# Bundle app source
-COPY . .
-
-EXPOSE 8080
+EXPOSE 8888
 
 CMD [ "node", "./dist/index.js" ]

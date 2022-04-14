@@ -1,0 +1,16 @@
+{
+  "apps": [
+    {
+      "name": "dingding-server",
+      "script": "./dist/index.js",
+      "cwd": "./",
+      "instances": "2",
+      "exec_mode": "cluster",
+      "max_restarts": "10",
+      "error_file": "./logs/err.log",
+      "out_file": "./logs/out.log",
+      "log_date_format": "YYYY-MM-DD HH:mm Z",
+      "watch": ["dist", "config"]
+    }
+  ]
+}
