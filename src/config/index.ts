@@ -51,8 +51,8 @@ export default <IConfig>{
         signName: config.get("smsTemplate.signName")
     },
     job: {
-        attendanceRule: config.get("job.attendance"),
-        reportRule: config.get("job.report"),
-        refreshDingTalkConfigRule: config.get("job.refreshDingTalkConfig"),
+        attendanceRule: config.get("job.attendanceRule"),
+        reportRule: config.get("job.reportRule"),
+        refreshDingTalkConfigRule: config.get("job.refreshDingTalkConfigRule"),
     }
 }
