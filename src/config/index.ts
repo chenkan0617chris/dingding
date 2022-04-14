@@ -21,6 +21,11 @@ interface IConfig {
         code: string;
         signName: string;
     }
+    job: {
+        attendanceRule: string;
+        reportRule: string;
+        refreshDingTalkConfigRule: string;
+    }
 }
 
 export default <IConfig>{
@@ -44,5 +49,10 @@ export default <IConfig>{
     smsTemplate: {
         code: config.get("smsTemplate.code"),
         signName: config.get("smsTemplate.signName")
+    },
+    job: {
+        attendanceRule: config.get("job.attendance"),
+        reportRule: config.get("job.report"),
+        refreshDingTalkConfigRule: config.get("job.refreshDingTalkConfig"),
     }
 }

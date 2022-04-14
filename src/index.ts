@@ -139,14 +139,14 @@ app.get("/api/user/clean-office", async (req, res) => {
 
 async function schedules() {
   console.log("Schedules job successed!");
-
+  const { attendanceRule, reportRule, refreshDingTalkConfigRule } = config.job;
   // 刷新钉钉配置
-  schedule.scheduleJob("59 59 * * * *", async () => {
+  schedule.scheduleJob(refreshDingTalkConfigRule, async () => {
     console.log("Refresh Dingtalk configuration.");
     await init();
   });
 
-  schedule.scheduleJob("1 0 12 * * *", async () => {
+  schedule.scheduleJob(attendanceRule, async () => {
     let _date = moment().format("YYYY-MM-DD");
     console.log(`${_date} logs updating...`);
     const attendanceServive = new AttendanceService();
@@ -159,7 +159,7 @@ async function schedules() {
     }
   });
 
-  schedule.scheduleJob("0 10 12 * * *", async () => {
+  schedule.scheduleJob(reportRule, async () => {
     let reportService = new ReportService();
     let users = await reportService.getNotCommitReportUsers();
     for (let user of users) {
