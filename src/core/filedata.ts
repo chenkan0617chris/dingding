@@ -1,7 +1,7 @@
 import fs from "fs";
-import { ICleanUser } from "../interfaces/users";
+import { ICleanUser, IUser } from "../interfaces/users";
 import moment from "moment";
-import { IUser, IUserLogs } from "../interfaces/logs";
+import { IUserLogs } from "../interfaces/logs";
 
 export default class FileData {
     static async generateEmtpyLogs(days, type = "default") {

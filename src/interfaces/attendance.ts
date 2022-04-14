@@ -1,36 +1,56 @@
-export enum AttendanceCheckType {
-    "OnDuty" = "OnDuty", // 上班
-    "OffDuty" = "OffDuty" // 下班
+import { AttendanceCheckType, LogState, TimeResultType } from "../constants";
+import { IDingTalkBaseResult } from "./base";
+
+export interface IUserLogs {
+    id: string;
+    dept_name: string;
+    name: string;
+    logs?: ILogs[][];
 }
 
-export enum TimeResultType {
-    "Normal" = "Normal", //正常
-    "Late" = "Late", // 迟到
-    "Early" = "Early", // 早退
+export interface ILogs {
+    state: LogState;
+    value?: any;
 }
 
-export interface IAttendanceResult {
+export interface IAttendanceListResult {
+    errcode: number;
+    recordresult: IAttendanceRecordResult[],
+    hasMore: false,
+    errmsg: string;
+}
+
+export interface IAttendanceRecordResult {
     check_type: AttendanceCheckType,
     plan_check_time: string,
     user_check_time: string,
     time_result: TimeResultType;
+    userId: string;
 }
 
-export interface IAttendance {
-    attendance_result_list: IAttendanceResult[]
+export interface IUserAttendanceResult extends IDingTalkBaseResult<IUserAttendance> { }
+
+export interface IUserAttendance {
+    attendance_result_list: IAttendanceRecordResult[]
     approve_list: any[],
+    corpId: string;
+    work_date: string;
+    userid: string;
+    check_record_list: IRecordList[]
 }
+
+export interface IAttendanceLeaveResult extends IDingTalkBaseResult<IAttendanceLeave> { }
 
 export interface IAttendanceLeave {
-    columns: Column[];
+    columns: IAttendanceLeaveColumn[];
 }
 
-interface Column {
-    columnvals: Columnval[];
-    columnvo: Columnvo;
+interface IAttendanceLeaveColumn {
+    columnvals: IAttendanceLeaveColumnColumnval[];
+    columnvo: IAttendanceLeaveColumnColumnvo;
 }
 
-interface Columnvo {
+interface IAttendanceLeaveColumnColumnvo {
     alias: string;
     name: string;
     status: number;
@@ -38,8 +58,23 @@ interface Columnvo {
     type: number;
 }
 
-interface Columnval {
+interface IAttendanceLeaveColumnColumnval {
     date: string;
     value: string;
     name: string;
+}
+
+interface IRecordList {
+    checkType: string;
+    locationResult: string;
+    baseCheckTime: number;
+    groupId: number;
+    timeResult: string;
+    userId: string;
+    recordId: number;
+    workDate: number;
+    sourceType: string;
+    userCheckTime: number;
+    planId: number;
+    id: number;
 }

@@ -1,7 +1,6 @@
 node_modules
 dist
-build
 package-lock.json
-config.ts
 yarn.lock
 data
+/config/

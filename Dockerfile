@@ -1,12 +1,16 @@
-FROM node:12
+FROM node:16
 
-WORKDIR /usr/src/app
+WORKDIR /usr/dingding-server
 
 COPY package*.json .
-COPY . .
+COPY config ./config
+COPY data ./data
+COPY src ./src
+COPY tsconfig.json .
+COPY processes.json .
 
 RUN npm run build-docker
 
-EXPOSE 3335
+EXPOSE 8888
 
-CMD [ "node", "./build/index.js" ]
+CMD [ "node", "./dist/index.js" ]

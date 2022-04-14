@@ -9,7 +9,8 @@
       "max_restarts": "10",
       "error_file": "./logs/err.log",
       "out_file": "./logs/out.log",
-      "log_date_format": "YYYY-MM-DD HH:mm Z"
+      "log_date_format": "YYYY-MM-DD HH:mm Z",
+      "watch": ["dist"]
     }
   ]
 }

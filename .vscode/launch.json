@@ -6,7 +6,7 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/nodemon",
-      "program": "${workspaceRoot}/index.ts",
+      "program": "${workspaceRoot}/src/index.ts",
       "restart": true,
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
