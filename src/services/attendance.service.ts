@@ -22,10 +22,11 @@ export default class AttendanceService {
     }
 
     private initUserLogs(users: IUser[], userLogs: IUserLogs[], days: number) {
-        if (userLogs.length !== users.length) {
+        let _users = [...users], _userLogs = [...userLogs];
+        if (_userLogs.length !== _users.length) {
             // to do 可优化
-            userLogs = users.map(user => {
-                let _userlog = userLogs.find(x => x.name);
+            _userLogs = _users.map(user => {
+                let _userlog = _userLogs.find(x => x.name);
                 return {
                     id: user.id,
                     name: user.name,
@@ -33,9 +34,9 @@ export default class AttendanceService {
                     logs: _userlog ? _userlog.logs : Array.from(new Array(days), () => [])
                 }
             });
-            return userLogs;
+            return _userLogs;
         }
-        return userLogs;
+        return _userLogs;
     }
 
     /**
@@ -49,20 +50,16 @@ export default class AttendanceService {
     */
     private prepareAttendanceDates(date, day = 8): string[] {
         let dates = [];
-        // 判断后一天是否是当前月
-        let _date = moment(date).format("YYYYMM") === moment(date).add(-1, "days").format("YYYYMM");
-
-        while (dates.length !== day && _date) {
-            let dateCount = dates.length == 0 ? 1 : dates.length + 1;
-            dates.push(moment(date).add(-dateCount, "days").format("YYYY-MM-DD"));
-            _date = moment(date).add(-dateCount, "days").format("YYYYMM") === moment(date).add(-(dateCount + 1), "days").format("YYYYMM");
+        while (day) {
+            dates.push(moment(date).add(-dates.length, "days").format("YYYY-MM-DD"));
+            --day;
         }
         return dates.reverse();
     }
 
 
     async generateUserAttendances(date, day = 8) {
-        let dates = this.prepareAttendanceDates(date, day = 8)
+        let dates = this.prepareAttendanceDates(date, day);
         const firstDate = dates[0];
         const year = moment(firstDate).format("YYYY"),
             month = moment(firstDate).format("YYYY-MM"),
@@ -74,13 +71,11 @@ export default class AttendanceService {
 
         // 新增用户初始化logs（logs实际是考勤记录，修改成本太大一直沿用）
         userLogs = this.initUserLogs(users, userLogs, days);
-
         for (let d of dates) {
             let isHoliday = this.holidays.includes(d);
             for (let user of users) {
                 let currentIndex = userLogs.findIndex(ul => ul.name === user.name);
                 let index = parseInt(moment(d).format("D")) - 1;
-
                 // 节假日
                 if (isHoliday) {
                     userLogs[currentIndex].logs[index] = [];
@@ -92,8 +87,8 @@ export default class AttendanceService {
                     }
                     this.user = user;
                     this.logs = [];
-                    await this.getUserReportLog();
                     await this.getUserAttendanceByTimeName();
+                    await this.getUserReportLog();
                     await this.getUserAttendanceLog();
                     userLogs[currentIndex].logs[index] = this.logs;
                 }
@@ -135,11 +130,12 @@ export default class AttendanceService {
     * 日志记录 
     */
     private async getUserReportLog() {
-        const { date, isHoliday } = this.findNextNotHolodayDate(moment(this.tiems.start).format("YYYY-MM-DD"));
-        const endTime = moment(date).format("YYYY-MM-DD 09:00:00");
+        if (await this.whetherLeaveOneDay()) { return; }
+        const { date } = this.findNextNotHolodayDate(moment(this.tiems.start).format("YYYY-MM-DD"));
         const startTime = moment(this.tiems.start).format("YYYY-MM-DD 09:00:01");
-        const reports = await this.dingTalkApi.getReports(startTime, endTime, 0, this.user.id);
-        if (reports.data_list.length === 0 && !this.whetherLeaveOneDay()) {
+        const endTime = moment(date).format("YYYY-MM-DD 08:59:59");
+        let reports = await this.dingTalkApi.getReports(startTime, endTime, 0, this.user.id);
+        if (reports.data_list.length === 0) {
             this.logs.push({
                 state: LogState.X
             })
@@ -148,7 +144,7 @@ export default class AttendanceService {
 
     // 统一请假时长单位
     private unifyLeaveTime(name, value) {
-        const names = ["丧假"];
+        const names = ["丧假", "年假"];
         if (names.includes(name)) {
             return parseFloat(value) * 7.5;
         }
@@ -161,7 +157,7 @@ export default class AttendanceService {
     private async getUserAttendanceByTimeName() {
         const types = ["调休", "事假", "病假", "年假", "产假", "陪产假", "婚假", "例假", "丧假", "特别假"];
         let data = await this.dingTalkApi.getUserAttendanceLeaveTimeByNames(this.user.id, types.join(","), this.tiems.start, this.tiems.end);
-        for (let d of data.columns) {
+        for (let d of data?.columns) {
             if (d.columnvals[0].value != "null" && d.columnvals[0].value != "0.0") {
                 this.logs.push({
                     state: vacationToEnum(d.columnvo.name),
@@ -185,6 +181,7 @@ export default class AttendanceService {
 
         // 新入职员工没有打卡记录 （不严谨）
         if (attendance.attendance_result_list.length === 0) {
+            this.logs = [];
             return;
         }
 

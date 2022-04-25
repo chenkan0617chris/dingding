@@ -5,17 +5,19 @@ import { IUserLogs } from "./interfaces/logs";
 import express from "express";
 import * as bodyParser from "body-parser";
 import * as schedule from "node-schedule";
-import { IDingTalkTokenResponseResult } from "./interfaces";
+import { IDingTalkTokenResponseResult, ILogs, ITimeSheetData } from "./interfaces";
 import DingTalkService from "./services/dingTalk.service";
 import config from "./config";
 import AttendanceService from "./services/attendance.service";
 import ReportService from "./services/report.service";
 import SMSApi from "./apis/smsApi";
+import RedisHelper from "./core/redisHelper";
+import * as http from "http";
+import SocketService from "./services/socket.service";
 
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
-
 let dingTalkService: DingTalkService;
 
 app.use((req, res, next) => {
@@ -32,6 +34,7 @@ app.use((req, res, next) => {
 
 async function init() {
   try {
+    await RedisHelper.connection();
     const res: IDingTalkTokenResponseResult = await fetch(`${config.dingTalk.apiUrl}/gettoken?appkey=${config.dingTalk.apikey}&appsecret=${config.dingTalk.apisecret}`).then((res) => res.json());
     global["DingTalkAccessToken"] = res.access_token;
     dingTalkService = new DingTalkService();
@@ -50,7 +53,7 @@ app.get("/api/logs/get", async (req, res) => {
   let dingdingLogs = await FileData.readLogs(month);
   let customLogs = await FileData.readCustomLogs(month);
   let mergeLogs = dingdingLogs.map((ul: IUserLogs, index: number) => {
-    customLogs[index].logs.forEach((x, i) => {
+    customLogs[index].logs.forEach((x: ILogs[], i) => {
       if (x !== null) {
         ul.logs[i] = x;
       }
@@ -79,7 +82,7 @@ app.put("/api/logs/custom", async (req, res) => {
   let logs = await FileData.readCustomLogs(date);
   logs = logs.map((x: IUserLogs) => {
     if (x.id === userId) {
-      x.logs[index] = datas
+      x.logs[index] = datas;
     }
     return x;
   });
@@ -88,12 +91,16 @@ app.put("/api/logs/custom", async (req, res) => {
 });
 
 app.post("/api/user/add", async (req, res) => {
-  const { name, dept_name } = req.body;
+  const { name, dept_name, groupid } = req.body;
   let userDetail = await dingTalkService.getUsersName(name);
+  console.log(userDetail)
   if (!userDetail) {
     res.send("没有找到该用户的信息.");
     return;
   }
+
+  userDetail = { ...userDetail, groupid: groupid || null };
+
   userDetail.dept_name = dept_name;
   let users = await FileData.readUsers();
   if (users.find(x => x.id === userDetail.id)) {
@@ -109,19 +116,77 @@ app.post("/api/user/add", async (req, res) => {
   await FileData.writeUsers(JSON.stringify(users));
   const fileName = moment().format("YYYY-MM");
   let customLogs = await FileData.readCustomLogs(fileName);
-  customLogs.push({
+  let userlogs = await FileData.readLogs(fileName);
+  userlogs.splice(lastIndex + 1, 0, {
+    id: userDetail.id,
+    name: userDetail.name,
+    dept_name: userDetail.dept_name,
+    logs: Array.from(new Array(moment().daysInMonth()), () => [])
+  });
+  await FileData.writeLogs(userlogs, fileName);
+  customLogs.splice(lastIndex + 1, 0, {
     id: userDetail.id,
     name: userDetail.name,
     dept_name: userDetail.dept_name,
     logs: Array.from(new Array(moment().daysInMonth()), () => null)
   });
-  await FileData.writeCustomLogs(customLogs, fileName);
-  res.send(users);
+  const result = await FileData.writeCustomLogs(customLogs, fileName);
+  res.send(result);
+});
+
+app.delete("/api/user/delete", async (req, res) => {
+  const { userId } = req.query;
+
+  let users = await FileData.readUsers();
+  let index = users.findIndex(x => x.id === userId);
+
+  if (index === -1) {
+    res.send("没有找到该用户的信息.");
+    return;
+  }
+
+  users.splice(index, 1);
+  await FileData.writeUsers(JSON.stringify(users));
+  const fileName = moment().format("YYYY-MM");
+  let customLogs = await FileData.readCustomLogs(fileName);
+  let userlogs = await FileData.readLogs(fileName);
+  userlogs.splice(index, 1);
+  await FileData.writeLogs(userlogs, fileName);
+  customLogs.splice(index, 1);
+  const result = await FileData.writeCustomLogs(customLogs, fileName);
+  res.send(result);
 });
 
 app.get("/api/user/get", async (req, res) => {
+  const { userId } = req.query;
   const users = await FileData.readUsers();
+  if (userId) {
+    const user = users.find(x => x.id === userId);
+    res.send(user);
+    return;
+  }
   res.send(users);
+});
+
+app.put("/api/user/update", async (req, res) => {
+  const { name, id, phone, dept_name, english_name, groupid } = req.body;
+  let users = await FileData.readUsers();
+  if (id) {
+    users = users.map(user => {
+      if (user.id === id) {
+        user.name = name || user.name;
+        user.phone = phone || null;
+        user.dept_name = dept_name || null;
+        user.english_name = english_name || null;
+        user.groupid = groupid || null;
+      }
+      return user;
+    });
+  }
+
+  const result = await FileData.writeUsers(JSON.stringify(users));
+
+  res.send(result);
 });
 
 app.get("/api/user/dingding", async (req, res) => {
@@ -137,40 +202,80 @@ app.get("/api/user/clean-office", async (req, res) => {
   })
 });
 
+app.get("/api/user/dept", async (req, res) => {
+  const result = await FileData.readDepartments();
+  res.send(result);
+});
+
+app.put("/api/timesheet/update", async (req, res) => {
+  const { template } = req.body;
+  const result = await FileData.writeTimeSheetTemplate(JSON.stringify(template));
+  res.send(result);
+})
+
+app.get("/api/timesheet/get", async (req, res) => {
+  const { dept_name } = req.query;
+  const templateData = await FileData.readTimeSheetTemplate();
+  const users = await FileData.readUsers();
+  let datas = await RedisHelper.getByAsync<ITimeSheetData[]>("timesheets");
+  let timeSheetData = users.filter(x => x.dept_name === dept_name).map(x => {
+    return {
+      name: x.english_name,
+      groupid: x.groupid,
+      value: datas.find(d => d.name === x.english_name)?.value || null
+    }
+  })
+  res.send({
+    template: templateData,
+    data: timeSheetData
+  });
+})
+
 async function schedules() {
   console.log("Schedules job successed!");
   const { attendanceRule, reportRule, refreshDingTalkConfigRule } = config.job;
-  // 刷新钉钉配置
   schedule.scheduleJob(refreshDingTalkConfigRule, async () => {
     console.log("Refresh Dingtalk configuration.");
     await init();
   });
 
   schedule.scheduleJob(attendanceRule, async () => {
-    let _date = moment().format("YYYY-MM-DD");
+    let _date = moment().add(-1, "days").format("YYYY-MM-DD");
     console.log(`${_date} logs updating...`);
     const attendanceServive = new AttendanceService();
     try {
       const result = await attendanceServive.generateUserAttendances(_date);
-      console.log(result ? `${_date}logs update successed!` : "Logs update failed!");
+      console.log(result ? `${_date} logs update successed!` : "Logs update failed!");
     }
     catch (err) {
       console.log(err);
+      console.log("Logs update failed!");
     }
   });
 
   schedule.scheduleJob(reportRule, async () => {
     let reportService = new ReportService();
-    let users = await reportService.getNotCommitReportUsers();
+    const startTime = moment().format("YYYY-MM-DD 09:00:00");
+    const endTime = moment().format("YYYY-MM-DD 21:00:00");
+    let users = await reportService.getNotCommitReportUsers(startTime, endTime);
+    if (users.length === 0) {
+      console.log("Everyone submitted a report!");
+    }
     for (let user of users) {
-      SMSApi.sendNotCommitReportSMS(user, moment().format("YYYY-MM-DD"));
+      console.log("Not commit report : ", user.name);
+      await SMSApi.sendNotCommitReportSMS({ name: user.name, phone: user.phone }, moment().format("YYYY-MM-DD"));
     }
   });
 }
 
+async function start() {
+  const server = http.createServer(app);
+  await new SocketService(server);
+  server.listen(config.server.port, async () => {
+    await init();
+    await schedules();
+    console.log(`App listening on port ${config.server.port}.`);
+  })
+}
 
-app.listen(config.server.port, async () => {
-  await init();
-  await schedules();
-  console.log(`App listening on port ${config.server.port}.`);
-})
+start();

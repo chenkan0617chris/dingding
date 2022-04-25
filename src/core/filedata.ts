@@ -2,6 +2,7 @@ import fs from "fs";
 import { ICleanUser, IUser } from "../interfaces/users";
 import moment from "moment";
 import { IUserLogs } from "../interfaces/logs";
+import { IDepartments, ISheetTemplate } from "../interfaces";
 
 export default class FileData {
     static async generateEmtpyLogs(days, type = "default") {
@@ -16,7 +17,7 @@ export default class FileData {
         });
     }
 
-    static readLogs = async (fileName: string) => {
+    static readLogs = async (fileName: string): Promise<IUserLogs[]> => {
         try {
             const data = await fs.readFileSync(`./data/${fileName}.json`, { encoding: "utf-8" });
             return <IUserLogs[]>JSON.parse(data);
@@ -36,7 +37,7 @@ export default class FileData {
         }
     }
 
-    static readCustomLogs = async (fileName: string) => {
+    static readCustomLogs = async (fileName: string): Promise<IUserLogs[]> => {
         let _fileName = fileName + "-custom";
         try {
             const data = await fs.readFileSync(`./data/${_fileName}.json`, { encoding: "utf-8" });
@@ -64,7 +65,12 @@ export default class FileData {
     }
 
     static writeUsers = async (users: string) => {
-        return await fs.writeFileSync("./data/users.json", users, { encoding: "utf-8" });
+        try {
+            await fs.writeFileSync("./data/users.json", users, { encoding: "utf-8" });
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     static readHolidays = async (year: string): Promise<string[]> => {
@@ -75,5 +81,25 @@ export default class FileData {
     static readCleanUsers = async (): Promise<ICleanUser> => {
         const holodays = await fs.readFileSync(`./data/clean-users.json`, { encoding: "utf-8" });
         return <ICleanUser>JSON.parse(holodays);
+    }
+
+    static readDepartments = async (): Promise<IDepartments> => {
+        const departments = await fs.readFileSync(`./data/departments.json`, { encoding: "utf-8" });
+        return <IDepartments>JSON.parse(departments);
+    }
+
+    static writeTimeSheetTemplate = async (data: string) => {
+        try {
+            await fs.writeFileSync(`./data/timesheet-template.json`, data, { encoding: "utf-8" });
+            return true;
+        } catch (err) {
+            console.log(err);
+            return false;
+        }
+    }
+
+    static readTimeSheetTemplate = async () => {
+        const data = await fs.readFileSync(`./data/timesheet-template.json`, { encoding: "utf-8" });
+        return <ISheetTemplate>JSON.parse(data);
     }
 }

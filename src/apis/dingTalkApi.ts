@@ -161,5 +161,5 @@ export default class DingTalkApi {
         return punchIn.result;
     }
 
-    
+
 }

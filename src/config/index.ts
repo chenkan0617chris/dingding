@@ -26,6 +26,11 @@ interface IConfig {
         reportRule: string;
         refreshDingTalkConfigRule: string;
     }
+    redis: {
+        host: string;
+        port: number;
+        password: string;
+    }
 }
 
 export default <IConfig>{
@@ -54,5 +59,10 @@ export default <IConfig>{
         attendanceRule: config.get("job.attendanceRule"),
         reportRule: config.get("job.reportRule"),
         refreshDingTalkConfigRule: config.get("job.refreshDingTalkConfigRule"),
+    },
+    redis: {
+        host: config.get("redis.host"),
+        port: config.get("redis.port"),
+        password: config.get("redis.password"),
     }
 }

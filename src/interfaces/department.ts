@@ -26,3 +26,15 @@ export interface IDepartmentIdResult extends IDingTalkBaseResult<IDepartmentList
 interface IDepartmentListsubId {
   dept_id_list: string[];
 }
+
+export interface IDepartments {
+  id: number;
+  name: string;
+  code: string;
+  groups: IDepartmentGroup[]
+}
+
+interface IDepartmentGroup {
+  id: number;
+  name: string;
+}
