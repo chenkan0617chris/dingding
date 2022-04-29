@@ -11,6 +11,8 @@ export interface IUser {
     unionid: string;
     name: string;
     dept_name?: string;
+    english_name?: string;
+    groupid?: number;
     dept_id_list?: string[];
     phone?: string;
 }

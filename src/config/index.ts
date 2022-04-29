@@ -25,6 +25,12 @@ interface IConfig {
         attendanceRule: string;
         reportRule: string;
         refreshDingTalkConfigRule: string;
+        saveTimeSheetRule: string;
+    }
+    redis: {
+        host: string;
+        port: number;
+        password: string;
     }
 }
 
@@ -51,8 +57,14 @@ export default <IConfig>{
         signName: config.get("smsTemplate.signName")
     },
     job: {
-        attendanceRule: config.get("job.attendance"),
-        reportRule: config.get("job.report"),
-        refreshDingTalkConfigRule: config.get("job.refreshDingTalkConfig"),
+        attendanceRule: config.get("job.attendanceRule"),
+        reportRule: config.get("job.reportRule"),
+        refreshDingTalkConfigRule: config.get("job.refreshDingTalkConfigRule"),
+        saveTimeSheetRule: config.get("job.saveTimeSheetRule")
+    },
+    redis: {
+        host: config.get("redis.host"),
+        port: config.get("redis.port"),
+        password: config.get("redis.password"),
     }
 }

@@ -1,6 +1,6 @@
 import DingTalkApi from "../apis/dingTalkApi";
 import config from "../config";
-import { IReportSimple, IReportSimpleDatalist, IUser } from "../interfaces";
+import { IReportSimpleDatalist, IUser } from "../interfaces";
 import { unique } from "../utils";
 
 export default class DingTalkService {
@@ -16,14 +16,13 @@ export default class DingTalkService {
      */
     async getDepartmentIds() {
         const departments = await this.dingTalkApi.getDepartments();
-        let departmentIds = [];
+        let departmentIds = departments.map(x => x.dept_id);
         for (const d of departments) {
             let _departmentIds = await this.dingTalkApi.getChildrenDepartments(d.dept_id);
             departmentIds.push(..._departmentIds);
         }
         return unique<number>(departmentIds);
     }
-
 
     // 获取所有用户Id
     async getUserIds(departmentIds) {

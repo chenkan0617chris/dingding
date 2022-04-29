@@ -20,7 +20,7 @@ export interface IAttendanceListResult {
     errmsg: string;
 }
 
-export interface IAttendanceRecordResult {
+export interface IUserAttendanceRecordResult {
     check_type: AttendanceCheckType,
     plan_check_time: string,
     user_check_time: string,
@@ -28,10 +28,18 @@ export interface IAttendanceRecordResult {
     userId: string;
 }
 
+export interface IAttendanceRecordResult {
+    checkType: AttendanceCheckType,
+    planCheckTime: string,
+    userCheckTime: string,
+    timeResult: TimeResultType;
+    userId: string;
+}
+
 export interface IUserAttendanceResult extends IDingTalkBaseResult<IUserAttendance> { }
 
 export interface IUserAttendance {
-    attendance_result_list: IAttendanceRecordResult[]
+    attendance_result_list: IUserAttendanceRecordResult[]
     approve_list: any[],
     corpId: string;
     work_date: string;

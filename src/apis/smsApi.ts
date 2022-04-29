@@ -1,10 +1,8 @@
 import Core from "@alicloud/pop-core";
-import moment from "moment";
 import config from "../config";
-import { IUser } from "../interfaces";
 
 const SMSApi = {
-    sendNotCommitReportSMS: async (user: IUser, endTime: string) => {
+    sendNotCommitReportSMS: async (user: { name: string, phone: string }, endTime: string) => {
         if (!user.phone) return;
         const { accessKeyId, accessKeySecret, endpoint, apiVersion } = config.aliSms;
         const { code, signName } = config.smsTemplate;
