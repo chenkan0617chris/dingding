@@ -66,7 +66,6 @@ export default class DingTalkService {
     // 获取所有用户名称
     async getUsersName(name: string) {
         const users = await this.getUsers();
-        console.log("users", users);
         return users.find(x => x.name === name);
     }
 

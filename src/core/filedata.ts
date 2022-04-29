@@ -5,6 +5,10 @@ import { IUserLogs } from "../interfaces/logs";
 import { IDepartments, ISheetTemplate } from "../interfaces";
 
 export default class FileData {
+    static fileDefaultOptions: fs.WriteFileOptions = {
+        encoding: "utf-8"
+    }
+
     static async generateEmtpyLogs(days, type = "default") {
         const users = await FileData.readUsers();
         return users.map(x => {
@@ -23,18 +27,13 @@ export default class FileData {
             return <IUserLogs[]>JSON.parse(data);
         } catch {
             const userlogs = await FileData.generateEmtpyLogs(moment(fileName).daysInMonth());
-            await FileData.writeLogs(userlogs, fileName);
+            await FileData.writeLogs(fileName, userlogs);
             return userlogs;
         }
     }
 
-    static writeLogs = async (logs: IUserLogs[], fileName: string) => {
-        try {
-            await fs.writeFileSync(`./data/${fileName}.json`, JSON.stringify(logs), { encoding: "utf-8" });
-            return true;
-        } catch {
-            return false;
-        }
+    static writeLogs = async (fileName: string, logs: IUserLogs[]) => {
+        return await FileData.tryCatchWriteFile(`./data/${fileName}.json`, JSON.stringify(logs));
     }
 
     static readCustomLogs = async (fileName: string): Promise<IUserLogs[]> => {
@@ -44,19 +43,14 @@ export default class FileData {
             return <IUserLogs[]>JSON.parse(data);
         } catch {
             const userlogs = await FileData.generateEmtpyLogs(moment(fileName).daysInMonth(), "Custom");
-            await FileData.writeCustomLogs(userlogs, fileName);
+            await FileData.writeCustomLogs(fileName, userlogs);
             return userlogs;
         }
     }
 
-    static writeCustomLogs = async (logs: IUserLogs[], fileName: string) => {
+    static writeCustomLogs = async (fileName: string, logs: IUserLogs[]) => {
         let _fileName = fileName + "-custom";
-        try {
-            await fs.writeFileSync(`./data/${_fileName}.json`, JSON.stringify(logs), { encoding: "utf-8" });
-            return true;
-        } catch {
-            return false;
-        }
+        return await FileData.tryCatchWriteFile(`./data/${_fileName}.json`, JSON.stringify(logs));
     }
 
     static readUsers = async () => {
@@ -64,13 +58,8 @@ export default class FileData {
         return <IUser[]>JSON.parse(data);
     }
 
-    static writeUsers = async (users: string) => {
-        try {
-            await fs.writeFileSync("./data/users.json", users, { encoding: "utf-8" });
-            return true;
-        } catch {
-            return false;
-        }
+    static writeUsers = async (data: string) => {
+        return await FileData.tryCatchWriteFile(`./data/users.json`, data);
     }
 
     static readHolidays = async (year: string): Promise<string[]> => {
@@ -89,17 +78,30 @@ export default class FileData {
     }
 
     static writeTimeSheetTemplate = async (data: string) => {
-        try {
-            await fs.writeFileSync(`./data/timesheet-template.json`, data, { encoding: "utf-8" });
-            return true;
-        } catch (err) {
-            console.log(err);
-            return false;
-        }
+        return await FileData.tryCatchWriteFile(`./data/timesheet-template.json`, data);
     }
 
     static readTimeSheetTemplate = async () => {
         const data = await fs.readFileSync(`./data/timesheet-template.json`, { encoding: "utf-8" });
         return <ISheetTemplate>JSON.parse(data);
+    }
+
+    static writeTimeSheet = async (fileName: string, data: string) => {
+        const filePath = "./data/timesheets";
+        const fileExist = await fs.existsSync(filePath);
+        (!fileExist) && await fs.mkdirSync(filePath, { recursive: true });
+
+        return await FileData.tryCatchWriteFile(`./data/timesheets/${fileName}.json`, data, { encoding: "utf-8" });
+    }
+
+    static async tryCatchWriteFile(file: fs.PathOrFileDescriptor, data: string, options: fs.WriteFileOptions = FileData.fileDefaultOptions) {
+        try {
+            await fs.writeFileSync(file, data, options);
+            return true;
+        }
+        catch (error) {
+            console.log(error);
+            return false;
+        }
     }
 }

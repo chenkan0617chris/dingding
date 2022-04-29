@@ -38,7 +38,7 @@ async function init() {
     const res: IDingTalkTokenResponseResult = await fetch(`${config.dingTalk.apiUrl}/gettoken?appkey=${config.dingTalk.apikey}&appsecret=${config.dingTalk.apisecret}`).then((res) => res.json());
     global["DingTalkAccessToken"] = res.access_token;
     dingTalkService = new DingTalkService();
-    console.log("DingTalk configuration successed!");
+    console.log("DingTalk configuration successful!");
   } catch (err) {
     console.log(err);
   }
@@ -64,15 +64,15 @@ app.get("/api/logs/get", async (req, res) => {
 });
 
 app.put("/api/logs/update", async (req, res) => {
-  const { date, day } = req.body;
+  const { date, day, name } = req.body;
   let _date = date ? moment(date).format("YYYY-MM-DD") : moment().format("YYYY-MM-DD");
   const attendanceServive = new AttendanceService();
   try {
-    const result = await attendanceServive.generateUserAttendances(_date, day);
-    res.send(result ? `${_date} update successed!` : "Update failed!");
+    const result = await attendanceServive.generateUserAttendances(_date, day, name);
+    res.send(result);
   }
-  catch (err) {
-    console.log(err);
+  catch (error) {
+    console.log(error);
   }
 });
 
@@ -86,7 +86,7 @@ app.put("/api/logs/custom", async (req, res) => {
     }
     return x;
   });
-  const result = await FileData.writeCustomLogs(logs, date);
+  const result = await FileData.writeCustomLogs(date, logs);
   res.send(result);
 });
 
@@ -123,14 +123,14 @@ app.post("/api/user/add", async (req, res) => {
     dept_name: userDetail.dept_name,
     logs: Array.from(new Array(moment().daysInMonth()), () => [])
   });
-  await FileData.writeLogs(userlogs, fileName);
+  await FileData.writeLogs(fileName, userlogs);
   customLogs.splice(lastIndex + 1, 0, {
     id: userDetail.id,
     name: userDetail.name,
     dept_name: userDetail.dept_name,
     logs: Array.from(new Array(moment().daysInMonth()), () => null)
   });
-  const result = await FileData.writeCustomLogs(customLogs, fileName);
+  const result = await FileData.writeCustomLogs(fileName, customLogs);
   res.send(result);
 });
 
@@ -151,9 +151,9 @@ app.delete("/api/user/delete", async (req, res) => {
   let customLogs = await FileData.readCustomLogs(fileName);
   let userlogs = await FileData.readLogs(fileName);
   userlogs.splice(index, 1);
-  await FileData.writeLogs(userlogs, fileName);
+  await FileData.writeLogs(fileName, userlogs);
   customLogs.splice(index, 1);
-  const result = await FileData.writeCustomLogs(customLogs, fileName);
+  const result = await FileData.writeCustomLogs(fileName, customLogs);
   res.send(result);
 });
 
@@ -232,8 +232,8 @@ app.get("/api/timesheet/get", async (req, res) => {
 })
 
 async function schedules() {
-  console.log("Schedules job successed!");
-  const { attendanceRule, reportRule, refreshDingTalkConfigRule } = config.job;
+  console.log("Schedules job successful!");
+  const { attendanceRule, reportRule, refreshDingTalkConfigRule, saveTimeSheetRule } = config.job;
   schedule.scheduleJob(refreshDingTalkConfigRule, async () => {
     console.log("Refresh Dingtalk configuration.");
     await init();
@@ -245,7 +245,7 @@ async function schedules() {
     const attendanceServive = new AttendanceService();
     try {
       const result = await attendanceServive.generateUserAttendances(_date);
-      console.log(result ? `${_date} logs update successed!` : "Logs update failed!");
+      console.log(result ? `${_date} logs update successful!` : "Logs update failed!");
     }
     catch (err) {
       console.log(err);
@@ -264,6 +264,24 @@ async function schedules() {
     for (let user of users) {
       console.log("Not commit report : ", user.name);
       await SMSApi.sendNotCommitReportSMS({ name: user.name, phone: user.phone }, moment().format("YYYY-MM-DD"));
+    }
+  });
+
+  schedule.scheduleJob(saveTimeSheetRule, async () => {
+    const currentDate = moment();
+    const holidays = await FileData.readHolidays(currentDate.year().toString());
+    let isHoliday = holidays.includes(currentDate.format("YYYY-MM-DD"));
+    if (isHoliday) {
+      return;
+    }
+    console.log("Saving TimeSheet...");
+    let timeSheetList = await RedisHelper.getByAsync<ITimeSheetData[]>("timesheets");
+    const result = await FileData.writeTimeSheet(currentDate.format("YYYY-MM-DD"), JSON.stringify(timeSheetList));
+    if (result) {
+      console.log("Save TimeSheet successful!");
+      await RedisHelper.setAsync("timesheets", "[]");
+    } else {
+      console.log("Save TimeSheet Failed!");
     }
   });
 }

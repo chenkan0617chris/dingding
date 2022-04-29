@@ -25,6 +25,7 @@ interface IConfig {
         attendanceRule: string;
         reportRule: string;
         refreshDingTalkConfigRule: string;
+        saveTimeSheetRule: string;
     }
     redis: {
         host: string;
@@ -59,6 +60,7 @@ export default <IConfig>{
         attendanceRule: config.get("job.attendanceRule"),
         reportRule: config.get("job.reportRule"),
         refreshDingTalkConfigRule: config.get("job.refreshDingTalkConfigRule"),
+        saveTimeSheetRule: config.get("job.saveTimeSheetRule")
     },
     redis: {
         host: config.get("redis.host"),

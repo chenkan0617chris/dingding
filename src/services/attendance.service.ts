@@ -58,7 +58,7 @@ export default class AttendanceService {
     }
 
 
-    async generateUserAttendances(date, day = 8) {
+    async generateUserAttendances(date, day = 8, name?: string) {
         let dates = this.prepareAttendanceDates(date, day);
         const firstDate = dates[0];
         const year = moment(firstDate).format("YYYY"),
@@ -74,6 +74,9 @@ export default class AttendanceService {
         for (let d of dates) {
             let isHoliday = this.holidays.includes(d);
             for (let user of users) {
+                if (name && user.name != name) {
+                    continue;
+                }
                 let currentIndex = userLogs.findIndex(ul => ul.name === user.name);
                 let index = parseInt(moment(d).format("D")) - 1;
                 // 节假日
@@ -94,7 +97,7 @@ export default class AttendanceService {
                 }
             }
         }
-        return await FileData.writeLogs(userLogs, month);
+        return await FileData.writeLogs(month, userLogs);
     }
 
     /**
